@@ -29,6 +29,9 @@ _SKIP_DOMAINS = _AGGREGATOR_DOMAINS | {
     "duckduckgo.com", "bing.com",
 }
 
+# Sites that require a login to view content — skip page fetching entirely
+_NO_FETCH_DOMAINS = {"linkedin.com"}
+
 
 def is_aggregator_url(url):
     """Return True if the URL is from a job board aggregator rather than a direct ATS."""
@@ -127,9 +130,16 @@ def resolve_aggregator_url(url, ats_domains):
     """
     For aggregator URLs, attempt to find the direct ATS posting URL
     embedded in the page. Returns the ATS URL if found, else the original URL.
+    Skips resolution entirely for sites behind login walls (e.g. LinkedIn).
     """
     if not is_aggregator_url(url):
         return url
+    try:
+        hostname = urlparse(url).hostname or ""
+        if any(d in hostname for d in _NO_FETCH_DOMAINS):
+            return url
+    except Exception:
+        pass
     soup = _get_soup(url)
     ats_url = _find_ats_url_in_aggregator(soup, ats_domains)
     return ats_url if ats_url else url

@@ -49,18 +49,45 @@ const EMPTY_MESSAGES = {
 // NOTE: Quick Search is for manual browsing only. To have Job Radar automatically
 // pull postings into your dashboard, add Google Alert RSS feeds to config.json.
 
+// Location clause: remote-first, but open to Bay Area onsite/hybrid
+const _LOC = "remote+OR+%22San+Francisco%22+OR+%22Bay+Area%22";
+
 const QUICK_SEARCHES = [
   {
     label: "Senior Product Manager",
-    url: "https://www.google.com/search?q=%22senior+product+manager%22+remote&ibp=htl;jobs",
+    url: `https://www.google.com/search?q=%22senior+product+manager%22+${_LOC}&ibp=htl;jobs`,
   },
   {
     label: "Customer Success Manager",
-    url: "https://www.google.com/search?q=%22customer+success+manager%22+remote&ibp=htl;jobs",
+    url: `https://www.google.com/search?q=%22customer+success+manager%22+${_LOC}&ibp=htl;jobs`,
   },
   {
     label: "Technical Program Manager",
-    url: "https://www.google.com/search?q=%22technical+program+manager%22+remote&ibp=htl;jobs",
+    url: `https://www.google.com/search?q=%22technical+program+manager%22+${_LOC}&ibp=htl;jobs`,
+  },
+  {
+    label: "Enterprise CSM",
+    url: `https://www.google.com/search?q=%22enterprise+customer+success+manager%22+${_LOC}&ibp=htl;jobs`,
+  },
+  {
+    label: "Implementation Manager",
+    url: `https://www.google.com/search?q=%22implementation+manager%22+SaaS+${_LOC}&ibp=htl;jobs`,
+  },
+  {
+    label: "Strategic Account Manager",
+    url: `https://www.google.com/search?q=%22strategic+account+manager%22+SaaS+${_LOC}&ibp=htl;jobs`,
+  },
+  {
+    label: "Partner Success Manager",
+    url: `https://www.google.com/search?q=%22partner+success+manager%22+${_LOC}&ibp=htl;jobs`,
+  },
+  {
+    label: "Solutions Consultant",
+    url: `https://www.google.com/search?q=%22solutions+consultant%22+SaaS+${_LOC}&ibp=htl;jobs`,
+  },
+  {
+    label: "Marketplace PM",
+    url: `https://www.google.com/search?q=%22product+manager%22+marketplace+${_LOC}&ibp=htl;jobs`,
   },
 ];
 
@@ -354,7 +381,10 @@ function buildRowHTML(job) {
         </div>
       </div>
       <div class="row-right">
-        <span class="fit-badge ${badge}" title="Fit score: ${job.fit_score}/10 — ${job.fit_score>=8?'Gold match':job.fit_score>=5?'Good fit':job.fit_score>=3?'Fair fit':'Low fit'}">${job.fit_score}/10</span>
+        ${job.scored === false
+          ? `<span class="fit-badge" style="background:#0a66c2;color:#fff;border-color:#0a66c2;font-size:0.7rem;letter-spacing:0.02em" title="LinkedIn posting — login required">LinkedIn</span>`
+          : `<span class="fit-badge ${badge}" title="Fit score: ${job.fit_score}/10 — ${job.fit_score>=8?'Gold match':job.fit_score>=5?'Good fit':job.fit_score>=3?'Fair fit':'Low fit'}">${job.fit_score}/10</span>`
+        }
         <div class="row-actions">
           <button class="btn btn-open" data-action="open" title="Open posting in browser">↗</button>
           ${canApply  ? `<button class="btn btn-applied"  data-action="applied">Applied</button>` : ""}
@@ -426,6 +456,10 @@ function buildDetailHTML(job) {
   return `
 <div class="row-detail open">
 
+  ${job.scored === false ? `
+  <div style="padding:12px 14px;background:#e8f0fb;border-radius:6px;color:#0a66c2;font-size:0.85rem;line-height:1.5;margin-bottom:10px">
+    LinkedIn requires you to be logged in. Please navigate directly to LinkedIn.
+  </div>` : `
   <div class="score-cards">
     <div class="score-card">
       <div class="score-label">Fit Score</div>
@@ -445,7 +479,7 @@ function buildDetailHTML(job) {
         <div class="score-bar-fill" style="width:${atsBarW}%;background:${ac}"></div>
       </div>
     </div>
-  </div>
+  </div>`}
 
   ${matched.length || missing.length ? `
   <div class="keyword-section">
@@ -749,6 +783,12 @@ function renderRightRail() {
     ⌕ Search Google for <em>${esc(job.company)}</em>
   </a>` : ""}
 
+  ${job.scored === false ? `
+  <div class="panel-section">
+    <div style="padding:10px 12px;background:#e8f0fb;border-radius:6px;color:#0a66c2;font-size:0.82rem;line-height:1.5">
+      LinkedIn requires you to be logged in. Please navigate directly to LinkedIn.
+    </div>
+  </div>` : `
   <div class="panel-section">
     <div class="rail-scores">
       <div class="rail-score-item">
@@ -760,7 +800,7 @@ function renderRightRail() {
         <div class="rail-score-lbl">ATS</div>
       </div>
     </div>
-  </div>
+  </div>`}
 
   ${job.salary ? `
   <div class="panel-section">

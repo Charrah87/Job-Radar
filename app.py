@@ -144,40 +144,53 @@ def refresh_feeds():
         if job_id in jobs:
             continue  # Already tracked — never overwrite
 
-        # Fetch full posting text; fall back to RSS snippet
-        posting_text = fetch_job_text(item["url"], item["ats"], item.get("summary", ""))
-        if not posting_text:
+        is_linkedin = item["ats"] == "LinkedIn"
+
+        if is_linkedin:
+            # LinkedIn is behind a login wall — use RSS data only, skip scoring
             posting_text = item.get("summary", "")
+            job_details  = {"salary": "", "location": "", "work_style": ""}
+            ats_result   = {"ats_score": 0, "matched_keywords": [], "missing_keywords": []}
+            fit          = 0
+            company_info = {"description": "", "website": "", "linkedin": item["url"]}
+            contact      = {"name": "", "title": "", "email": ""}
+            scored       = False
+        else:
+            # Fetch full posting text; fall back to RSS snippet
+            posting_text = fetch_job_text(item["url"], item["ats"], item.get("summary", ""))
+            if not posting_text:
+                posting_text = item.get("summary", "")
 
-        # Extract job details early — work_style needed by the pre-filter
-        job_details = extract_job_details(posting_text)
+            # Extract job details early — work_style needed by the pre-filter
+            job_details = extract_job_details(posting_text)
 
-        # Pre-filter: drop cybersecurity, degree-required, and out-of-range roles
-        skip, reason = should_skip_job(
-            item["title"],
-            posting_text,
-            job_details.get("work_style", ""),
-            job_filters,
-        )
-        if skip:
-            print(f"[filter] Skipped: {item['title'][:60]} — {reason}")
-            skipped += 1
-            continue
+            # Pre-filter: drop cybersecurity, degree-required, and out-of-range roles
+            skip, reason = should_skip_job(
+                item["title"],
+                posting_text,
+                job_details.get("work_style", ""),
+                job_filters,
+            )
+            if skip:
+                print(f"[filter] Skipped: {item['title'][:60]} — {reason}")
+                skipped += 1
+                continue
 
-        # Scores
-        ats_result = score_ats(posting_text, resume_keywords, ats_weights)
-        fit = calculate_fit_score(
-            item["title"],
-            posting_text,
-            ats_result["ats_score"],
-            user_profile,
-        )
+            # Scores
+            ats_result = score_ats(posting_text, resume_keywords, ats_weights)
+            fit = calculate_fit_score(
+                item["title"],
+                posting_text,
+                ats_result["ats_score"],
+                user_profile,
+            )
 
-        # Company info and contact
-        company_info = fetch_company_info(
-            item["url"], item["ats"], item.get("company", ""), posting_text
-        )
-        contact = extract_contact_from_text(posting_text)
+            # Company info and contact
+            company_info = fetch_company_info(
+                item["url"], item["ats"], item.get("company", ""), posting_text
+            )
+            contact = extract_contact_from_text(posting_text)
+            scored  = True
 
         jobs[job_id] = {
             "id": job_id,
@@ -187,6 +200,7 @@ def refresh_feeds():
             "url": item["url"],
             "feed_label": item["feed_label"],
             "status": "new",
+            "scored": scored,
             "gold": fit >= 8,
             "fit_score": fit,
             "ats_score": ats_result["ats_score"],
