@@ -1,23 +1,17 @@
 {
-  "_comment_rss_feeds": "Add one entry per Google Alert. Create alerts at google.com/alerts, set 'Deliver to: RSS feed', then paste the feed URL below. The '_search_string' field is documentation only — it shows what query was used to create the alert and is not read by the app. The 'ats' field hints which ATS platform to expect in links from this feed (greenhouse, lever, ashby, workday, icims, generic).",
+  "_comment_rss_feeds": "Add one entry per Google Alert. Create alerts at google.com/alerts using the site:-targeted strings in the README, set 'Deliver to: RSS feed', then paste the feed URL below. See the Google Alerts Setup section of README.md for the recommended 9 alert strings.",
   "rss_feeds": [
     {
       "label": "YOUR_ALERT_LABEL_HERE",
-      "_search_string": "\"your job title here\" remote",
-      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE",
-      "ats": "generic"
+      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE"
     },
     {
       "label": "YOUR_ALERT_LABEL_HERE",
-      "_search_string": "\"your job title here\" remote",
-      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE",
-      "ats": "generic"
+      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE"
     },
     {
       "label": "YOUR_ALERT_LABEL_HERE",
-      "_search_string": "\"your job title here\" remote",
-      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE",
-      "ats": "generic"
+      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE"
     }
   ],
 
@@ -44,6 +38,9 @@
     "onsite_regions": []
   },
 
+  "_comment_blocked_domains": "Domains to permanently exclude from your feed. Any URL whose hostname contains one of these strings is dropped before processing. Add trade publications, news sites, or any other source producing noise in your results.",
+  "blocked_domains": [],
+
   "_comment_app": "Server settings. 'port' is the local port Job Radar runs on (default 5000 — change if something else is using that port). Set 'debug' to true only when developing; it causes the server to auto-reload on code changes.",
   "app": {
     "port": 5000,
@@ -53,13 +50,16 @@
   "_comment_github_repo": "Your GitHub repository in 'username/repo-name' format. Used by the in-app update checker to compare your local VERSION against the latest release. Example: 'Charrah87/Job-Radar'. Leave as-is if you did not clone from GitHub.",
   "github_repo": "YOUR_USERNAME/job-radar",
 
-  "_comment_ats_domains": "Maps ATS domain fragments to display names shown in the UI. The app detects which ATS platform a job is hosted on by checking if the posting URL contains any of these domain strings. Add new entries if you find postings from ATS platforms not listed here.",
+  "_comment_ats_domains": "Maps URL fragments to platform names shown in the UI. The app checks if a posting URL contains any of these strings to identify the platform. Special behavior: LinkedIn postings are stored without scores (login wall) and show a notice to navigate directly to the listing. Indeed and ZipRecruiter postings are scraped normally — the app attempts to find the direct ATS link on the page and upgrades the URL if found.",
   "ats_domains": {
     "boards.greenhouse.io": "Greenhouse",
     "jobs.ashbyhq.com": "Ashby",
     "jobs.lever.co": "Lever",
     "myworkdayjobs.com": "Workday",
-    "icims.com": "iCIMS"
+    "icims.com": "iCIMS",
+    "linkedin.com/jobs": "LinkedIn",
+    "indeed.com": "Indeed",
+    "ziprecruiter.com": "ZipRecruiter"
   },
 
   "_comment_fit_score_weights": "Maximum points each factor contributes to the Fit Score (0-10 total). title_match: how well the job title matches your target titles. skills_coverage: derived from your ATS keyword match percentage. experience_level: how well the posted years-of-experience requirement aligns with yours. domain_fit: industry/domain alignment with your preferred_domains. work_style: remote/hybrid/onsite preference match.",
