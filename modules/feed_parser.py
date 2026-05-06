@@ -4,6 +4,53 @@ from urllib.parse import urlparse, parse_qs, unquote
 from html import unescape
 import re
 
+# Path segments that indicate editorial / non-job content
+_NON_JOB_PATH_SEGMENTS = {
+    "news", "blog", "article", "articles", "press", "press-release",
+    "press-releases", "research", "insights", "whitepaper", "whitepapers",
+    "resources", "events", "webinar", "podcast", "newsletter",
+    "announcement", "announcements", "story", "stories", "post", "posts",
+    "opinion", "media", "publication", "publications",
+}
+
+
+def _is_non_job_url(url, blocked_domains=None):
+    """
+    Return True if the URL looks like editorial content rather than a job posting.
+
+    Checks (in order):
+      1. Domain matches a blocked_domains entry from config.json
+      2. Path starts with /@ — user profile pages (e.g. himalayas.app/@username)
+      3. Any path segment matches known editorial patterns (/news/, /blog/, etc.)
+    """
+    if not url:
+        return False
+    try:
+        parsed = urlparse(url)
+        hostname = (parsed.hostname or "").lower()
+        path = parsed.path.lower()
+
+        # 1. Explicit domain blocklist
+        if blocked_domains:
+            for domain in blocked_domains:
+                if domain.lower() in hostname:
+                    return True
+
+        # 2. User profile pattern (/@username)
+        if path.startswith("/@"):
+            return True
+
+        # 3. Editorial path segment check
+        for part in path.split("/"):
+            part_clean = part.split("?")[0].split("#")[0]
+            if part_clean in _NON_JOB_PATH_SEGMENTS:
+                return True
+
+    except Exception:
+        pass
+    return False
+
+
 _BROWSER_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -215,7 +262,8 @@ def fetch_feeds(config):
       - "arbeitnow_api"       → Arbeitnow JSON API
     Returns a list of raw job dicts ready for processing.
     """
-    ats_domains = config.get("ats_domains", {})
+    ats_domains     = config.get("ats_domains", {})
+    blocked_domains = config.get("blocked_domains", [])
     results = []
 
     for feed_cfg in config.get("rss_feeds", []):
@@ -252,6 +300,10 @@ def fetch_feeds(config):
             raw_link = entry.get("link", "")
             real_url = extract_real_url(raw_link)
             if not real_url:
+                continue
+
+            # Drop editorial content and profile pages before any further processing
+            if _is_non_job_url(real_url, blocked_domains):
                 continue
 
             raw_title = entry.get("title", "")

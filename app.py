@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from flask import Flask, jsonify, render_template, request
 
-from modules.feed_parser import fetch_feeds
+from modules.feed_parser import fetch_feeds, detect_ats
 from modules.fit_scorer import calculate_fit_score
 from modules.job_fetcher import (
     check_url_alive,
@@ -13,6 +13,7 @@ from modules.job_fetcher import (
     extract_job_details,
     fetch_company_info,
     fetch_job_text,
+    resolve_aggregator_url,
 )
 from modules.keyword_engine import (
     extract_resume_keywords,
@@ -124,7 +125,21 @@ def refresh_feeds():
     added = 0
     skipped = 0
 
+    ats_domains = config.get("ats_domains", {})
+
     for item in feed_items:
+        # For aggregator URLs, try to resolve to a direct ATS posting URL first
+        if item["ats"] == "Unknown":
+            resolved = resolve_aggregator_url(item["url"], ats_domains)
+            if resolved != item["url"]:
+                item["url"] = resolved
+                item["ats"] = detect_ats(resolved, ats_domains)
+
+        # No recognized platform and no company name — not enough signal, skip
+        if item["ats"] == "Unknown" and not item.get("company", "").strip():
+            skipped += 1
+            continue
+
         job_id = make_job_id(item["url"])
         if job_id in jobs:
             continue  # Already tracked — never overwrite

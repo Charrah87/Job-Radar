@@ -19,7 +19,7 @@ _AGGREGATOR_DOMAINS = {
     "simplyhired.com", "careerbuilder.com", "dice.com", "flexjobs.com",
     "remoteok.com", "weworkremotely.com", "otta.com", "getwork.com",
     "jooble.org", "jobgether.com", "remoteleaf.com", "lensa.com",
-    "snagajob.com", "talent.com", "joblist.com",
+    "snagajob.com", "talent.com", "joblist.com", "dailyremote.com",
 }
 
 # Domains to skip when scanning pages for outbound company links
@@ -100,6 +100,39 @@ def _extract_company_link_from_aggregator(soup, company_name):
             return f"{parsed.scheme}://{hostname}"
 
     return ""
+
+
+def _find_ats_url_in_aggregator(soup, ats_domains):
+    """
+    Scan an aggregator page's links for a direct ATS posting URL.
+    Returns the first ATS URL found, or "" if none.
+    """
+    if not soup:
+        return ""
+    ats_domain_list = list(ats_domains.keys())
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if not href.startswith("http"):
+            continue
+        try:
+            hostname = urlparse(href).hostname or ""
+            if any(d in hostname for d in ats_domain_list):
+                return href
+        except Exception:
+            continue
+    return ""
+
+
+def resolve_aggregator_url(url, ats_domains):
+    """
+    For aggregator URLs, attempt to find the direct ATS posting URL
+    embedded in the page. Returns the ATS URL if found, else the original URL.
+    """
+    if not is_aggregator_url(url):
+        return url
+    soup = _get_soup(url)
+    ats_url = _find_ats_url_in_aggregator(soup, ats_domains)
+    return ats_url if ats_url else url
 
 
 def _find_linkedin_page(company_name):
