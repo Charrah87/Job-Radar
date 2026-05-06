@@ -308,36 +308,6 @@ _US_SIGNAL = re.compile(
     re.I,
 )
 
-# Cybersecurity role titles / domains to exclude
-_CYBER_TITLE = re.compile(
-    r"\b(cyber\s*security|cybersec|information\s+security|infosec|"
-    r"security\s+engineer|penetration\s+test|pen\s+test|"
-    r"soc\s+analyst|threat\s+intel|vulnerability|"
-    r"devsecops|siem|firewall|intrusion\s+detection|"
-    r"ciso|chief\s+information\s+security)\b",
-    re.I,
-)
-
-_DEGREE_WORDS = re.compile(
-    r"\b(bachelor'?s?\s+degree|master'?s?\s+degree|"
-    r"b\.s\b|b\.a\b|m\.s\b|m\.b\.a\b|\bmba\b|"
-    r"4-year\s+degree|four.year\s+degree|"
-    r"undergraduate\s+degree|college\s+degree|advanced\s+degree)\b",
-    re.I,
-)
-_REQUIRE_WORDS = re.compile(
-    r"\b(required|requires?|must\s+have|must-have|mandatory|"
-    r"minimum\s+qualifications?|minimum\s+requirements?|minimum\s+education|"
-    r"basic\s+qualifications?|essential|necessary)\b",
-    re.I,
-)
-_DEGREE_EXEMPT = re.compile(
-    r"\bor\s+(equivalent|relevant|comparable|related)\s+(work\s+)?experience\b"
-    r"|\bor\s+equivalent\b"
-    r"|\bor\s+(a\s+)?combination\s+of\s+education",
-    re.I,
-)
-
 
 def _build_region_pattern(onsite_regions):
     """
@@ -359,10 +329,8 @@ def should_skip_job(title, posting_text, work_style="", job_filters=None):
     Return (True, reason) if the job should be silently dropped, else (False, "").
 
     Filters applied in order:
-      1. Cybersecurity roles — title match
-      2. Degree hard-required — posting text, excluding "or equivalent experience"
-      3. Non-US location — if require_us_only is True in job_filters
-      4. Onsite/hybrid outside allowed regions — only if onsite_regions is configured
+      1. Non-US location — if require_us_only is True in job_filters
+      2. Onsite/hybrid outside allowed regions — only if onsite_regions is configured
 
     job_filters: dict from config.json job_filters block. Keys:
       require_us_only (bool)  — drop jobs explicitly located outside the US
@@ -379,24 +347,7 @@ def should_skip_job(title, posting_text, work_style="", job_filters=None):
     combined = f"{title} {posting_text}"
     snippet  = posting_text if posting_text else ""
 
-    # ── 1. Cybersecurity title filter ─────────────────────────────────────
-    if _CYBER_TITLE.search(title):
-        return True, "cybersecurity role"
-
-    # ── 2. Degree required filter ─────────────────────────────────────────
-    req_text, _, _ = _split_jd_sections(snippet)
-    req_section_detected = any(m in req_text.lower() for m in REQUIRED_SECTION_MARKERS)
-
-    for dm in _DEGREE_WORDS.finditer(req_text):
-        w0 = max(0, dm.start() - 300)
-        w1 = min(len(req_text), dm.end() + 300)
-        window = req_text[w0:w1]
-        if _DEGREE_EXEMPT.search(window):
-            continue
-        if req_section_detected or _REQUIRE_WORDS.search(window):
-            return True, f"degree required ({dm.group(0).strip()})"
-
-    # ── 3. Non-US location filter ─────────────────────────────────────────
+    # ── 1. Non-US location filter ─────────────────────────────────────────
     if require_us:
         for cm in _NON_US_COUNTRY.finditer(snippet):
             w0 = max(0, cm.start() - 200)
@@ -405,7 +356,7 @@ def should_skip_job(title, posting_text, work_style="", job_filters=None):
             if _LOCATION_CONTEXT.search(window) and not _US_SIGNAL.search(window):
                 return True, f"non-US location ({cm.group(0).strip()})"
 
-    # ── 4. Onsite / hybrid outside configured regions ─────────────────────
+    # ── 2. Onsite / hybrid outside configured regions ─────────────────────
     # Only applies if the user has set onsite_regions in config.
     # If onsite_regions is empty, all onsite/hybrid locations are accepted.
     if region_re:

@@ -369,9 +369,6 @@ The `job_filters` block in `config.json` controls what gets filtered out before 
 | `onsite_regions` | Regions you're willing to commute to for onsite/hybrid roles. Leave as `[]` to allow all locations. |
 
 The app also automatically filters out:
-- Cybersecurity-focused roles (unless you want them — edit `SECURITY_TITLE_TERMS` in `modules/keyword_engine.py`)
-- Roles requiring a specific degree (e.g., "Bachelor's required")
-- Roles where the posting text skews far outside your experience bracket
 - URLs with editorial path patterns (`/news/`, `/blog/`, `/article/`, etc.)
 - User profile pages (paths starting with `/@`)
 
