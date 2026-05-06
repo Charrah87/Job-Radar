@@ -2,44 +2,20 @@
   "_comment_rss_feeds": "Add one entry per Google Alert. Create alerts at google.com/alerts, set 'Deliver to: RSS feed', then paste the feed URL below. The '_search_string' field is documentation only — it shows what query was used to create the alert and is not read by the app. The 'ats' field hints which ATS platform to expect in links from this feed (greenhouse, lever, ashby, workday, icims, generic).",
   "rss_feeds": [
     {
-      "label": "Senior / Lead / Principal PM",
-      "_search_string": "\"senior product manager\" OR \"lead product manager\" OR \"principal product manager\" -intern -contract",
+      "label": "YOUR_ALERT_LABEL_HERE",
+      "_search_string": "\"your job title here\" remote",
       "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE",
       "ats": "generic"
     },
     {
-      "label": "Technical / Platform / Staff PM",
-      "_search_string": "\"technical product manager\" OR \"platform product manager\" OR \"staff product manager\" -intern -contract",
+      "label": "YOUR_ALERT_LABEL_HERE",
+      "_search_string": "\"your job title here\" remote",
       "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE",
       "ats": "generic"
     },
     {
-      "label": "Product Owner",
-      "_search_string": "\"product owner\" OR \"senior product owner\" -intern -contract",
-      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE",
-      "ats": "generic"
-    },
-    {
-      "label": "API / Integration PM",
-      "_search_string": "\"API product manager\" OR \"integration product manager\" OR \"developer product manager\" -intern -contract",
-      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE",
-      "ats": "generic"
-    },
-    {
-      "label": "Director / VP / Head of Product",
-      "_search_string": "\"director of product\" OR \"VP of product\" OR \"head of product\" -intern -contract",
-      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE",
-      "ats": "generic"
-    },
-    {
-      "label": "CSM / Senior CSM",
-      "_search_string": "\"customer success manager\" OR \"senior customer success manager\" OR \"client success manager\" -intern -contract",
-      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE",
-      "ats": "generic"
-    },
-    {
-      "label": "Technical CSM / TAM",
-      "_search_string": "\"technical customer success manager\" OR \"technical account manager\" -intern -contract",
+      "label": "YOUR_ALERT_LABEL_HERE",
+      "_search_string": "\"your job title here\" remote",
       "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE",
       "ats": "generic"
     }
@@ -54,13 +30,11 @@
   "_comment_user_profile": "Controls the Fit Score (0-10) shown on each job. 'titles' should list your target job titles from most to least preferred — the scorer checks if the posting title contains any of them. 'years_experience' is your total relevant experience used to judge seniority fit. 'preferred_domains' boosts scores for industries you want — common values: saas, api, platform, proptech, fintech, edtech, healthtech.",
   "user_profile": {
     "titles": [
-      "Senior Product Manager",
-      "Product Manager",
-      "Technical Product Manager",
-      "Product Owner"
+      "YOUR_PRIMARY_TITLE_HERE",
+      "YOUR_SECONDARY_TITLE_HERE"
     ],
-    "years_experience": 5,
-    "preferred_domains": ["saas", "api", "platform"]
+    "years_experience": 0,
+    "preferred_domains": ["YOUR_INDUSTRY_HERE"]
   },
 
   "_comment_job_filters": "Controls which jobs are silently dropped before reaching your board. 'require_us_only' drops postings that mention non-US locations. 'allow_remote' always lets remote roles through regardless of location. 'onsite_regions' lists cities or regions you are willing to commute to for hybrid/onsite roles — leave as [] to accept all locations.",
