@@ -1,0 +1,91 @@
+{
+  "rss_feeds": [
+    {
+      "label": "Senior / Lead / Principal PM",
+      "_search_string": "\"senior product manager\" OR \"lead product manager\" OR \"principal product manager\" -intern -contract",
+      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE"
+    },
+    {
+      "label": "Technical / Platform / Staff PM",
+      "_search_string": "\"technical product manager\" OR \"platform product manager\" OR \"staff product manager\" -intern -contract",
+      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE"
+    },
+    {
+      "label": "Product Owner",
+      "_search_string": "\"product owner\" OR \"senior product owner\" -intern -contract",
+      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE"
+    },
+    {
+      "label": "API / Integration PM",
+      "_search_string": "\"API product manager\" OR \"integration product manager\" OR \"developer product manager\" -intern -contract",
+      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE"
+    },
+    {
+      "label": "Director / VP / Head of Product",
+      "_search_string": "\"director of product\" OR \"VP of product\" OR \"head of product\" -intern -contract",
+      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE"
+    },
+    {
+      "label": "CSM / Senior CSM",
+      "_search_string": "\"customer success manager\" OR \"senior customer success manager\" OR \"client success manager\" -intern -contract",
+      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE"
+    },
+    {
+      "label": "Technical CSM / TAM",
+      "_search_string": "\"technical customer success manager\" OR \"technical account manager\" -intern -contract",
+      "url": "YOUR_GOOGLE_ALERT_RSS_URL_HERE"
+    }
+  ],
+
+  "resume_path": "path/to/your/resume.docx",
+
+  "resume_keywords": [],
+
+  "user_profile": {
+    "_comment": "Set your title history (most to least senior), years of experience, and preferred domains. These drive the Fit Score calculation.",
+    "titles": [
+      "Senior Product Manager",
+      "Product Manager",
+      "Technical Product Manager",
+      "Product Owner"
+    ],
+    "years_experience": 5,
+    "preferred_domains": ["saas", "api", "platform"]
+  },
+
+  "job_filters": {
+    "_comment": "require_us_only drops jobs explicitly located outside the US. onsite_regions lists cities/regions to accept for hybrid/onsite roles — leave empty to accept all locations. allow_remote always accepts remote roles.",
+    "require_us_only": true,
+    "allow_remote": true,
+    "onsite_regions": []
+  },
+
+  "app": {
+    "port": 5000,
+    "debug": false
+  },
+
+  "github_repo": "YOUR_USERNAME/job-radar",
+
+  "ats_domains": {
+    "boards.greenhouse.io": "Greenhouse",
+    "jobs.ashbyhq.com": "Ashby",
+    "jobs.lever.co": "Lever",
+    "myworkdayjobs.com": "Workday",
+    "icims.com": "iCIMS"
+  },
+
+  "fit_score_weights": {
+    "title_match": 3,
+    "skills_coverage": 3,
+    "experience_level": 2,
+    "domain_fit": 1,
+    "work_style": 1
+  },
+
+  "ats_score_weights": {
+    "required_skills": 0.6,
+    "preferred_skills": 0.25,
+    "title_match": 0.15
+  }
+}

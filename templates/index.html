@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Radar</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ── Left Rail ─────────────────────────────────────────────────── -->
+    <nav class="left-rail">
+      <div class="rail-header">
+        <span class="logo">◎ Job Radar</span>
+        <div class="refresh-row">
+          <span id="lastRefreshTime" class="last-refresh"></span>
+          <button id="notifBtn" class="notif-btn" title="Notifications" style="display:none">🔔</button>
+          <button id="refreshBtn" class="refresh-btn" title="Refresh feeds">↻</button>
+        </div>
+      </div>
+
+      <ul class="group-list" id="groupList">
+        <!-- Rendered by app.js -->
+      </ul>
+
+      <div class="search-section" id="searchSection">
+        <!-- Rendered by app.js -->
+      </div>
+
+      <div class="rail-footer">
+        <span id="nextRefreshTime" class="next-refresh"></span>
+        <span id="appVersion" class="app-version"></span>
+      </div>
+    </nav>
+
+    <!-- ── Center Column ─────────────────────────────────────────────── -->
+    <main class="center-col">
+      <div class="group-header">
+        <h2 id="groupTitle" class="group-title"></h2>
+        <span id="jobCountBadge" class="job-count-badge"></span>
+      </div>
+      <div class="job-list" id="jobList">
+        <!-- Rendered by app.js -->
+      </div>
+    </main>
+
+    <!-- ── Right Rail ────────────────────────────────────────────────── -->
+    <aside class="right-rail">
+
+      <!-- Job detail panel — grows to fill available space -->
+      <div id="companyPanel" class="right-rail-top">
+        <div class="panel-placeholder">
+          <span>Select a posting to see company context</span>
+        </div>
+      </div>
+
+      <!-- Notification panel — pinned to bottom, hidden until triggered -->
+      <div id="notifPanel" class="notif-panel" style="display:none">
+        <div class="notif-header">
+          <span class="notif-icon">🔔</span>
+          <span class="notif-title" id="notifTitle"></span>
+          <button class="notif-close" id="notifClose" title="Dismiss">✕</button>
+        </div>
+        <div class="notif-body" id="notifBody"></div>
+        <div class="notif-actions" id="notifActions"></div>
+      </div>
+
+    </aside>
+
+  </div><!-- .app-shell -->
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

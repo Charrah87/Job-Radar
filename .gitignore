@@ -1,0 +1,40 @@
+# ── Job Radar — .gitignore ────────────────────────────────────────────────
+
+# Personal job data — never commit this
+jobs.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Generated launcher app (created by install.sh)
+*.app/
+Job\ Radar.app/
+
+# Resume files — keep off GitHub
+*.docx
+*.pdf
+
+# Local config overrides
+config_local.json
+
+# Temporary backup folders created by update.sh / update.bat
+.update_backup_*/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
