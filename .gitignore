@@ -1,7 +1,8 @@
 # ── Job Radar — .gitignore ────────────────────────────────────────────────
 
-# Personal job data — never commit this
+# Personal job data — never commit these
 jobs.json
+deleted_ids.json
 
 # Python
 __pycache__/

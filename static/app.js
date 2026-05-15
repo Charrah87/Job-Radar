@@ -6,14 +6,18 @@
 
 // ── State ─────────────────────────────────────────────────────────────────
 const S = {
-  jobs:          {},       // raw dict from /api/jobs, keyed by job_id
-  group:         "new",   // currently selected left-rail group
-  expandedId:    null,    // job currently expanded in center column
-  selectedId:    null,    // job selected for right-rail panel
-  lastRefresh:   null,    // Date | null
-  nextRefreshAt: null,    // Date | null
-  hourlyTimer:   null,    // setInterval handle
-  notesTimer:    null,    // debounce handle
+  jobs:              {},        // raw dict from /api/jobs, keyed by job_id
+  group:             "new",    // currently selected left-rail group
+  expandedId:        null,     // job currently expanded in center column
+  selectedId:        null,     // job selected for right-rail panel
+  lastRefresh:       null,     // Date | null
+  nextRefreshAt:     null,     // Date | null
+  hourlyTimer:       null,     // setInterval handle
+  notesTimer:        null,     // debounce handle
+  linkedinCollapsed: true,     // LinkedIn sub-section collapsed by default
+  highFitCollapsed:  false,    // 6+ fit bucket — expanded by default
+  lowFitCollapsed:   true,     // 5- fit bucket — collapsed by default
+  rejectedSelected:  new Set(), // job IDs checked in the rejected column
 };
 
 // ── Group Config ──────────────────────────────────────────────────────────
@@ -200,15 +204,18 @@ function scheduleHourlyRefresh() {
 }
 
 // ── Sorting ───────────────────────────────────────────────────────────────
-function getGroupJobs(groupId) {
+
+// Returns scored jobs only (excludes LinkedIn postings that couldn't be scraped)
+function getScoredJobs(groupId) {
   let jobs;
 
   if (groupId === "applied") {
     // Include legacy "waiting" status jobs so nothing gets orphaned
-    jobs = Object.values(S.jobs).filter(j => j.status === "applied" || j.status === "waiting");
+    jobs = Object.values(S.jobs).filter(j =>
+      (j.status === "applied" || j.status === "waiting") && j.scored !== false);
   } else {
     const status = GROUPS.find(g => g.id === groupId)?.status;
-    jobs = Object.values(S.jobs).filter(j => j.status === status);
+    jobs = Object.values(S.jobs).filter(j => j.status === status && j.scored !== false);
   }
 
   switch (groupId) {
@@ -235,6 +242,21 @@ function getGroupJobs(groupId) {
     default:
       return jobs;
   }
+}
+
+// Returns LinkedIn postings (scored === false) for the given group, newest first
+function getLinkedInJobs(groupId) {
+  let jobs;
+
+  if (groupId === "applied") {
+    jobs = Object.values(S.jobs).filter(j =>
+      (j.status === "applied" || j.status === "waiting") && j.scored === false);
+  } else {
+    const status = GROUPS.find(g => g.id === groupId)?.status;
+    jobs = Object.values(S.jobs).filter(j => j.status === status && j.scored === false);
+  }
+
+  return jobs.sort((a, b) => (b.date_found || "").localeCompare(a.date_found || ""));
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -307,6 +329,7 @@ function renderRail() {
         S.group = btn.dataset.group;
         S.expandedId = null;
         S.selectedId = null;
+        S.rejectedSelected = new Set(); // Clear selections when switching groups
         renderAll();
       }
     });
@@ -329,18 +352,48 @@ function renderSearchLinks() {
   `;
 }
 
+// ── Build: Rejected Toolbar HTML ─────────────────────────────────────────
+function buildRejectedToolbarHTML() {
+  const count = S.rejectedSelected.size;
+  return `
+<div class="rejected-toolbar">
+  <div class="rejected-toolbar-left">
+    <input type="checkbox" class="reject-all-cb" data-action="select-all-rejected" title="Select all rejections">
+    <span class="rejected-toolbar-select-label">Select All</span>
+  </div>
+  <button class="btn btn-delete-selected" data-action="delete-selected-rejected"${count === 0 ? " disabled" : ""}>
+    ${count > 0 ? `Delete (${count})` : "Delete Selected"}
+  </button>
+</div>`;
+}
+
+// ── Sync: Rejected Toolbar Checkbox State ─────────────────────────────────
+// Sets indeterminate state on the select-all checkbox (can't be done via HTML attr)
+function syncRejectedToolbar() {
+  const cb = document.querySelector(".reject-all-cb");
+  if (!cb) return;
+  const allIds     = Object.values(S.jobs).filter(j => j.status === "rejected").map(j => j.id);
+  const count      = S.rejectedSelected.size;
+  const allChecked = allIds.length > 0 && allIds.every(id => S.rejectedSelected.has(id));
+  cb.checked       = allChecked;
+  cb.indeterminate = count > 0 && !allChecked;
+}
+
 // ── Render: Center Column ─────────────────────────────────────────────────
 function renderCenter() {
   const groupDef = GROUPS.find(g => g.id === S.group);
   document.getElementById("groupTitle").textContent = groupDef?.label ?? "";
 
-  const jobs = getGroupJobs(S.group);
+  const scored   = getScoredJobs(S.group);
+  const linkedin = getLinkedInJobs(S.group);
+  const total    = scored.length + linkedin.length;
+
   document.getElementById("jobCountBadge").textContent =
-    `${jobs.length} posting${jobs.length !== 1 ? "s" : ""}`;
+    `${total} posting${total !== 1 ? "s" : ""}`;
 
   const list = document.getElementById("jobList");
 
-  if (jobs.length === 0) {
+  if (total === 0) {
     list.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">◎</div>
@@ -349,22 +402,94 @@ function renderCenter() {
     return;
   }
 
-  list.innerHTML = jobs.map(job => buildRowHTML(job)).join("");
+  let html = "";
+
+  // ── Rejected toolbar (select-all + delete) — only in rejected group ───────
+  if (S.group === "rejected") {
+    html += buildRejectedToolbarHTML();
+  }
+
+  // ── LinkedIn section — pinned to TOP, collapsed by default ────────────────
+  if (linkedin.length > 0) {
+    const collapsed = S.linkedinCollapsed;
+    html += `
+<div class="linkedin-section">
+  <button class="linkedin-section-header" data-action="linkedin-toggle">
+    <span class="linkedin-section-icon">in</span>
+    <span class="linkedin-section-title">LinkedIn Postings</span>
+    <span class="linkedin-section-subtitle">— login required to score</span>
+    <span class="linkedin-section-count">${linkedin.length}</span>
+    <span class="linkedin-section-chevron">${collapsed ? "▼" : "▲"}</span>
+  </button>
+  ${collapsed ? "" : linkedin.map(job => buildRowHTML(job)).join("")}
+</div>`;
+  }
+
+  // ── Score buckets — split at 6/10 ────────────────────────────────────────
+  const scoredHigh = scored.filter(j => j.fit_score >= 6);
+  const scoredLow  = scored.filter(j => j.fit_score <= 5);
+
+  if (scoredHigh.length > 0) {
+    const collapsed = S.highFitCollapsed;
+    html += `
+<div class="score-bucket bucket-high">
+  <button class="score-bucket-header" data-action="toggle-high-fit">
+    <span class="score-bucket-label">Strong Fits</span>
+    <span class="score-bucket-subtitle">6 / 10 and above</span>
+    <span class="score-bucket-count">${scoredHigh.length}</span>
+    <span class="score-bucket-chevron">${collapsed ? "▼" : "▲"}</span>
+  </button>
+  ${collapsed ? "" : scoredHigh.map(job => buildRowHTML(job)).join("")}
+</div>`;
+  }
+
+  if (scoredLow.length > 0) {
+    const collapsed = S.lowFitCollapsed;
+    html += `
+<div class="score-bucket bucket-low">
+  <button class="score-bucket-header" data-action="toggle-low-fit">
+    <span class="score-bucket-label">Lower Fits</span>
+    <span class="score-bucket-subtitle">5 / 10 and below</span>
+    <span class="score-bucket-count">${scoredLow.length}</span>
+    <span class="score-bucket-chevron">${collapsed ? "▼" : "▲"}</span>
+  </button>
+  ${collapsed ? "" : scoredLow.map(job => buildRowHTML(job)).join("")}
+</div>`;
+  }
+
+  list.innerHTML = html;
+
+  // Sync toolbar checkbox indeterminate state after DOM update
+  if (S.group === "rejected") {
+    syncRejectedToolbar();
+  }
 }
 
 // ── Build: Job Row HTML ───────────────────────────────────────────────────
 function buildRowHTML(job) {
-  const isExpanded = S.expandedId === job.id;
-  const isSelected = S.selectedId === job.id;
-  const stripe = stripeClass(job);
-  const badge = fitBadgeClass(job.fit_score);
-  const isSaved = job.status === "saved";
-  const isNew   = job.status === "new";
+  const isExpanded   = S.expandedId === job.id;
+  const isSelected   = S.selectedId === job.id;
+  const stripe       = stripeClass(job);
+  const badge        = fitBadgeClass(job.fit_score);
+  const isSaved      = job.status === "saved";
+  const isNew        = job.status === "new";
+  const isRejected   = job.status === "rejected";
 
   // Decide which action buttons to render
   const canApply  = !["applied","rejected","expired"].includes(job.status);
   const canReject = !["rejected","expired"].includes(job.status);
   const canStar   = ["new","saved"].includes(job.status);
+
+  // Left-side control: checkbox (rejected), star (new/saved), or spacer
+  let leftControl;
+  if (isRejected) {
+    const checked = S.rejectedSelected.has(job.id);
+    leftControl = `<input type="checkbox" class="reject-checkbox" data-action="reject-select" ${checked ? "checked" : ""} title="Select to delete">`;
+  } else if (canStar) {
+    leftControl = `<button class="star-btn${isSaved ? " starred" : ""}" data-action="star" title="${isSaved ? "Remove from Saved" : "Save posting"}">★</button>`;
+  } else {
+    leftControl = `<span style="width:18px;display:inline-block"></span>`;
+  }
 
   return `
 <div class="job-row${isSelected ? " selected" : ""}" data-job-id="${job.id}">
@@ -372,9 +497,7 @@ function buildRowHTML(job) {
     <div class="row-inner">
       <div class="row-left">
         ${job.gold && job.status !== "new" ? `<span class="gold-diamond" title="Gold match">♦</span>` : ""}
-        ${canStar
-          ? `<button class="star-btn${isSaved ? " starred" : ""}" data-action="star" title="${isSaved ? "Remove from Saved" : "Save posting"}">★</button>`
-          : `<span style="width:18px;display:inline-block"></span>`}
+        ${leftControl}
         <div class="job-info">
           <div class="job-title">${esc(job.title)}</div>
           <div class="job-company">${esc(job.company)}${job.company && job.ats ? " · " : ""}${esc(job.ats)}</div>
@@ -528,6 +651,61 @@ function buildDetailHTML(job) {
 function wireRowEvents(container) {
   // Single click handler on the container
   container.addEventListener("click", async e => {
+
+    // ── Actions that live OUTSIDE .job-row (toolbar, bucket headers) ──────
+    const outerEl     = e.target.closest("[data-action]");
+    const outerAction = outerEl?.dataset?.action;
+
+    if (outerAction === "linkedin-toggle") {
+      S.linkedinCollapsed = !S.linkedinCollapsed;
+      renderCenter();
+      return;
+    }
+
+    if (outerAction === "toggle-high-fit") {
+      S.highFitCollapsed = !S.highFitCollapsed;
+      renderCenter();
+      return;
+    }
+
+    if (outerAction === "toggle-low-fit") {
+      S.lowFitCollapsed = !S.lowFitCollapsed;
+      renderCenter();
+      return;
+    }
+
+    if (outerAction === "select-all-rejected") {
+      // e.target.checked already reflects the new toggled state
+      const allIds = Object.values(S.jobs).filter(j => j.status === "rejected").map(j => j.id);
+      if (e.target.checked) {
+        allIds.forEach(id => S.rejectedSelected.add(id));
+      } else {
+        S.rejectedSelected.clear();
+      }
+      renderCenter();
+      return;
+    }
+
+    if (outerAction === "delete-selected-rejected") {
+      const toDelete = [...S.rejectedSelected];
+      if (toDelete.length === 0) return;
+      try {
+        for (const id of toDelete) {
+          await apiDeleteJob(id);
+        }
+        S.rejectedSelected.clear();
+        if (toDelete.includes(S.expandedId)) S.expandedId = null;
+        if (toDelete.includes(S.selectedId)) S.selectedId = null;
+        renderAll();
+        showToast(`Removed ${toDelete.length} posting${toDelete.length !== 1 ? "s" : ""}`);
+      } catch (err) {
+        console.error(err);
+        showToast("Could not remove postings");
+      }
+      return;
+    }
+
+    // ── Row-scoped actions ────────────────────────────────────────────────
     const row = e.target.closest(".job-row");
     if (!row) return;
     const jobId = row.dataset.jobId;
@@ -536,6 +714,26 @@ function wireRowEvents(container) {
 
     const actionEl = e.target.closest("[data-action]");
     const action   = actionEl?.dataset?.action;
+
+    // ── Rejected checkbox — select/deselect individual posting ────────────
+    if (action === "reject-select") {
+      e.stopPropagation();
+      // e.target.checked reflects the new state (browser already toggled it)
+      if (e.target.checked) {
+        S.rejectedSelected.add(jobId);
+      } else {
+        S.rejectedSelected.delete(jobId);
+      }
+      // Update toolbar without a full re-render
+      const count  = S.rejectedSelected.size;
+      const delBtn = document.querySelector("[data-action='delete-selected-rejected']");
+      if (delBtn) {
+        delBtn.textContent = count > 0 ? `Delete (${count})` : "Delete Selected";
+        delBtn.disabled    = count === 0;
+      }
+      syncRejectedToolbar();
+      return;
+    }
 
     if (!action) {
       // Click on the job info area — toggle expand

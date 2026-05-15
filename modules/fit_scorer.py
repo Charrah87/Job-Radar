@@ -44,6 +44,8 @@ def score_title_match(jd_title, user_titles=None):
         return 2.5
     if "technical product manager" in t or "platform product manager" in t:
         return 2.5
+    if re.search(r"\bplatform\s+pm\b", t) or re.search(r"\bpm\b.*\bplatform\b", t):
+        return 2.5
     if "staff product manager" in t or "group product manager" in t:
         return 2.0
     if "product manager" in t and "associate" not in t:

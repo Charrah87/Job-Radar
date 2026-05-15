@@ -18,8 +18,17 @@
   "_comment_resume_path": "Full or relative path to your resume .docx file. Examples: '/Users/yourname/Documents/Resume.docx' or 'Resume.docx' if it's in the same folder as app.py.",
   "resume_path": "path/to/your/resume.docx",
 
+  "_comment_narrative_path": "Optional. Full or relative path to a second .docx document (e.g. a cover letter, LinkedIn summary, or career narrative). Not used in scoring today — reserved for a future context-aware feature.",
+  "narrative_path": "",
+
   "_comment_resume_keywords": "Auto-generated on first launch — do not edit. The app extracts keywords from your resume and caches them here so startup is fast. To force a re-scan (e.g. after updating your resume), delete everything between the brackets and save: []",
   "resume_keywords": [],
+
+  "_comment_custom_keywords": "Domain-specific multi-word phrases to inject directly into your ATS keyword set — useful for niche terms your resume may not spell out explicitly (e.g. 'mls integration', 'p95 latency', 'platform product manager'). Single words work too. These are merged with your extracted resume keywords and matched against every job posting.",
+  "custom_keywords": [],
+
+  "_comment_custom_synonyms": "Synonym pairs that let the scorer treat variant spellings as the same keyword. Each entry is a two-element list: [variant, canonical]. Example: [\"mls\", \"multiple listing service\"] means postings containing either phrase count as a match. Variants are case-insensitive.",
+  "custom_synonyms": [],
 
   "_comment_user_profile": "Controls the Fit Score (0-10) shown on each job. 'titles' should list your target job titles from most to least preferred — the scorer checks if the posting title contains any of them. 'years_experience' is your total relevant experience used to judge seniority fit. 'preferred_domains' boosts scores for industries you want — common values: saas, api, platform, proptech, fintech, edtech, healthtech.",
   "user_profile": {
@@ -47,7 +56,7 @@
     "debug": false
   },
 
-  "_comment_github_repo": "Your GitHub repository in 'username/repo-name' format. Used by the in-app update checker to compare your local VERSION against the latest release. Example: 'Charrah87/Job-Radar'. Leave as-is if you did not clone from GitHub.",
+  "_comment_github_repo": "Your GitHub repository in 'username/repo-name' format. Used by the in-app update checker to compare your local VERSION against the latest release. Example: 'johndoe/job-radar'. Leave as-is if you did not clone from GitHub.",
   "github_repo": "YOUR_USERNAME/job-radar",
 
   "_comment_ats_domains": "Maps URL fragments to platform names shown in the UI. The app checks if a posting URL contains any of these strings to identify the platform. Special behavior: LinkedIn postings are stored without scores (login wall) and show a notice to navigate directly to the listing. Indeed and ZipRecruiter postings are scraped normally — the app attempts to find the direct ATS link on the page and upgrades the URL if found.",

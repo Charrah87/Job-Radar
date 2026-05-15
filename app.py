@@ -27,6 +27,7 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 JOBS_PATH = os.path.join(BASE_DIR, "jobs.json")
+DELETED_IDS_PATH = os.path.join(BASE_DIR, "deleted_ids.json")
 VERSION_PATH = os.path.join(BASE_DIR, "VERSION")
 
 
@@ -72,6 +73,19 @@ def save_jobs(jobs):
         json.dump(jobs, f, indent=2)
 
 
+def load_deleted_ids():
+    """Return the set of job IDs that have been permanently deleted."""
+    if not os.path.exists(DELETED_IDS_PATH):
+        return set()
+    with open(DELETED_IDS_PATH, encoding="utf-8") as f:
+        return set(json.load(f))
+
+
+def save_deleted_ids(deleted_ids):
+    with open(DELETED_IDS_PATH, "w", encoding="utf-8") as f:
+        json.dump(list(deleted_ids), f)
+
+
 def make_job_id(url):
     return hashlib.sha256(url.encode()).hexdigest()[:8]
 
@@ -88,12 +102,28 @@ def resolve_path(config_path):
 
 
 def ensure_resume_keywords(config):
-    """Cache resume keywords in config.json if not already done."""
-    if not config.get("resume_keywords"):
+    """Cache resume keywords in config.json if not already done.
+
+    Re-extracts when resume_keywords is empty OR when custom_keywords has changed
+    since the last extraction (detected via a stored hash of the sorted list).
+    """
+    import hashlib as _hashlib
+    custom_keywords = config.get("custom_keywords", [])
+    custom_hash = _hashlib.md5(
+        json.dumps(sorted(custom_keywords)).encode()
+    ).hexdigest()[:8]
+
+    needs_rebuild = (
+        not config.get("resume_keywords")
+        or config.get("resume_keywords_hash") != custom_hash
+    )
+
+    if needs_rebuild:
         resume_path = resolve_path(config["resume_path"])
         print(f"[startup] Extracting keywords from {resume_path}")
-        keywords = extract_resume_keywords(resume_path)
+        keywords = extract_resume_keywords(resume_path, custom_keywords)
         config["resume_keywords"] = keywords
+        config["resume_keywords_hash"] = custom_hash
         save_config(config)
         print(f"[startup] Cached {len(keywords)} resume keywords")
     return config
@@ -126,6 +156,7 @@ def refresh_feeds():
     skipped = 0
 
     ats_domains = config.get("ats_domains", {})
+    deleted_ids = load_deleted_ids()  # Never re-add postings the user deleted
 
     for item in feed_items:
         # For aggregator URLs, try to resolve to a direct ATS posting URL first
@@ -141,8 +172,8 @@ def refresh_feeds():
             continue
 
         job_id = make_job_id(item["url"])
-        if job_id in jobs:
-            continue  # Already tracked — never overwrite
+        if job_id in jobs or job_id in deleted_ids:
+            continue  # Already tracked or permanently deleted — skip
 
         is_linkedin = item["ats"] == "LinkedIn"
 
@@ -177,7 +208,14 @@ def refresh_feeds():
                 continue
 
             # Scores
-            ats_result = score_ats(posting_text, resume_keywords, ats_weights)
+            ats_result = score_ats(
+                posting_text,
+                resume_keywords,
+                ats_weights,
+                job_title=item["title"],
+                custom_keywords=config.get("custom_keywords"),
+                custom_synonyms=config.get("custom_synonyms"),
+            )
             fit = calculate_fit_score(
                 item["title"],
                 posting_text,
@@ -346,6 +384,10 @@ def delete_job(job_id):
         return jsonify({"error": "Not found"}), 404
     del jobs[job_id]
     save_jobs(jobs)
+    # Persist tombstone so this posting never resurfaces on future feed refreshes
+    deleted_ids = load_deleted_ids()
+    deleted_ids.add(job_id)
+    save_deleted_ids(deleted_ids)
     return jsonify({"ok": True})
 
 
